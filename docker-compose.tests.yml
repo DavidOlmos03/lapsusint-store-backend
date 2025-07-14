@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  dynamodb:
+    image: amazon/dynamodb-local
+    container_name: dynamodb_test
+    ports:
+      - "8002:8000"
+    command: -jar DynamoDBLocal.jar -inMemory -sharedDb -port 8000
+    healthcheck:
+      test: ["CMD", "curl", "--fail-early", "--connect-timeout", "2", "http://localhost:8000/shell"]
+      interval: 5s
+      timeout: 10s
+      retries: 20
+      start_period: 10s
+
+  seed:
+    build: .
+    container_name: seed_test_data
+    command: ["python", "scripts/seed_data.py"]
+    environment:
+      ENV: development
+      DYNAMODB_REGION: us-east-1
+      DYNAMODB_TABLE: Licenses
+      DYNAMODB_ENDPOINT_URL: http://dynamodb:8000
+      SECRET_KEY: dev_secret_key_change_in_production
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      PYTHONPATH: /app
+    depends_on:
+      dynamodb:
+        condition: service_healthy
+    volumes:
+      - .:/app
+
+  tests:
+    build: .
+    container_name: run_pytest
+    command: ["pytest", "tests/"]
+    environment:
+      ENV: development
+      DYNAMODB_REGION: us-east-1
+      DYNAMODB_TABLE: Licenses
+      DYNAMODB_ENDPOINT_URL: http://dynamodb:8000
+      SECRET_KEY: dev_secret_key_change_in_production
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      PYTHONPATH: /app
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+    volumes:
+      - .:/app
+
+  app:
+    build: .
+    container_name: lapsusint_api_test
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    environment:
+      ENV: development
+      DYNAMODB_REGION: us-east-1
+      DYNAMODB_TABLE: Licenses
+      DYNAMODB_ENDPOINT_URL: http://dynamodb:8000
+      SECRET_KEY: dev_secret_key_change_in_production
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      PYTHONPATH: /app
+    depends_on:
+      tests:
+        condition: service_completed_successfully
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app 
