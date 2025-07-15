@@ -1,7 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from typing import List
 from app.schemas.license import License, LicenseCreate, LicenseUpdate
 from app.crud.license import license_crud
+from app.services.s3_service import s3_service
+from app.api.deps import get_current_active_user
 
 router = APIRouter(prefix="/licenses", tags=["licenses"])
 
@@ -58,3 +60,14 @@ async def delete_license(license_id: str):
             detail="License not found"
         )
     return {"message": "License deleted successfully"} 
+
+@router.post("/upload-image", summary="Sube una imagen a S3 y retorna la URL pública")
+async def upload_license_image(
+    file: UploadFile = File(...),
+    current_user=Depends(get_current_active_user)
+):
+    try:
+        url = s3_service.upload_image(file.file, content_type=file.content_type)
+        return {"url": url}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) 

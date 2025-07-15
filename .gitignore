@@ -75,6 +75,7 @@ poetry.lock
 venv_lapsusint/
 .env
 .env.*
+.env.production
 
 # AWS credentials
 .aws/
