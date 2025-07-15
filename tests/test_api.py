@@ -26,7 +26,7 @@ def test_register_and_login():
 
     # Login
     login_data = {
-        "username": "pytestuser",
+        "username": "pytestuser@example.com",
         "password": "pytestpass"
     }
     response = client.post("/auth/login", data=login_data)

@@ -106,4 +106,12 @@ class UserCRUD:
             return None
         return user
 
+    async def authenticate_by_email(self, email: str, password: str) -> Optional[dict]:
+        user = await self.get_by_email(email)
+        if not user:
+            return None
+        if not verify_password(password, user["hashed_password"]):
+            return None
+        return user
+
 user_crud = UserCRUD() 

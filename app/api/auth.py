@@ -11,11 +11,11 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 @router.post("/login")
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     """Authenticate user and return access token"""
-    user = await user_crud.authenticate(form_data.username, form_data.password)
+    user = await user_crud.authenticate_by_email(form_data.username, form_data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
+            detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
     
