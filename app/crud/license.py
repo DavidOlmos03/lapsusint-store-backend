@@ -30,13 +30,23 @@ class LicenseCRUD:
         license_data["license_id"] = license_id
         license_data["create_at"] = datetime.utcnow().isoformat()
         license_data["update_at"] = datetime.utcnow().isoformat()
-        
+
+        # Convertir price a Decimal si existe
+        from decimal import Decimal
+        if "price" in license_data and license_data["price"] is not None:
+            license_data["price"] = Decimal(str(license_data["price"]))
+
         self.table.put_item(Item=license_data)
         return license_data
 
     async def get(self, license_id: str) -> Optional[dict]:
+        print(f"Buscando licencia con ID: {license_id}")
+        print(f"Tipo de license_id: {type(license_id)}")
         response = self.table.get_item(Key={"license_id": license_id})
-        return response.get("Item")
+        print(f"Respuesta de DynamoDB: {response}")
+        item = response.get("Item")
+        print(f"Item encontrado: {item}")
+        return item
 
     async def get_multi(self, skip: int = 0, limit: int = 10) -> List[dict]:
         response = self.table.scan(Limit=limit)
@@ -44,8 +54,18 @@ class LicenseCRUD:
         return items[skip:skip+limit]
 
     async def update(self, license_id: str, license_in: LicenseUpdate) -> Optional[dict]:
+        print(f"Actualizando licencia con ID: {license_id}")
         update_data = license_in.model_dump(exclude_unset=True)
+        print(f"Datos de actualización originales: {update_data}")
         update_data["update_at"] = datetime.utcnow().isoformat()
+        
+        # Convertir todos los float a Decimal
+        from decimal import Decimal
+        for key, value in update_data.items():
+            if isinstance(value, float):
+                update_data[key] = Decimal(str(value))
+                print(f"{key} convertido a Decimal: {update_data[key]}")
+        print(f"Datos de actualización finales: {update_data}")
         
         update_expression = "SET "
         expression_attribute_values = {}
@@ -58,6 +78,9 @@ class LicenseCRUD:
                 expression_attribute_names[f"#{key}"] = key
         
         update_expression = update_expression.rstrip(", ")
+        print(f"Update expression: {update_expression}")
+        print(f"Expression attribute values: {expression_attribute_values}")
+        print(f"Expression attribute names: {expression_attribute_names}")
         
         try:
             response = self.table.update_item(
@@ -67,9 +90,11 @@ class LicenseCRUD:
                 ExpressionAttributeNames=expression_attribute_names,
                 ReturnValues="ALL_NEW"
             )
+            print(f"Respuesta de update_item: {response}")
             return response.get("Attributes")
         except Exception as e:
             print(f"Error updating license: {e}")
+            print(f"Tipo de error: {type(e)}")
             return None
 
     async def delete(self, license_id: str) -> bool:

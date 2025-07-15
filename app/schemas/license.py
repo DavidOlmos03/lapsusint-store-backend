@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Union
 from datetime import datetime
 
 class LicenseBase(BaseModel):
@@ -25,11 +25,13 @@ class LicenseUpdate(LicenseBase):
 
 class LicenseInDBBase(LicenseBase):
     license_id: str
-    create_at: datetime
-    update_at: datetime
+    create_at: Optional[Union[str, datetime]] = None
+    update_at: Optional[Union[str, datetime]] = None
 
     class Config:
         from_attributes = True
+        # Permitir campos extra para mayor compatibilidad
+        extra = "ignore"
 
 class License(LicenseInDBBase):
     pass 

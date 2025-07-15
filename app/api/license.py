@@ -31,7 +31,16 @@ async def read_license(license_id: str):
 @router.put("/{license_id}", response_model=License)
 async def update_license(license_id: str, license_in: LicenseUpdate):
     """Update a license"""
-    license_data = await license_crud.update(license_id, license_in)
+    # Actualizar la licencia
+    update_result = await license_crud.update(license_id, license_in)
+    if not update_result:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="License not found"
+        )
+    
+    # Obtener la licencia actualizada completa
+    license_data = await license_crud.get(license_id)
     if not license_data:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
