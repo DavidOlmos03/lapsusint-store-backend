@@ -36,7 +36,7 @@ class S3Service:
                 file_obj,
                 self.bucket_name,
                 filename,
-                ExtraArgs=extra_args
+                #ExtraArgs=extra_args
             )
             url = f"https://{self.bucket_name}.s3.amazonaws.com/{filename}"
             return url
